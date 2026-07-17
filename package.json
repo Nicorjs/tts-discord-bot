@@ -1,0 +1,21 @@
+{
+  "name": "discord-tts-bot",
+  "version": "1.0.0",
+  "description": "Bot de Discord que lee en voz alta los mensajes de un canal de texto, usando la voz de Microsoft Edge (gratis, sin API key).",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "voices": "node list-voices.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "@discordjs/voice": "^0.19.2",
+    "libsodium-wrappers": "^0.8.4",
+    "msedge-tts": "^2.0.7",
+    "dotenv": "^17.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

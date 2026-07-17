@@ -1,0 +1,11 @@
+services:
+  discord-tts-bot:
+    build: .
+    container_name: discord-tts-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Guarda la voz elegida por servidor fuera del contenedor, para que
+      # sobreviva a reconstrucciones (docker compose up --build).
+      - ./guild-voices.json:/app/guild-voices.json
