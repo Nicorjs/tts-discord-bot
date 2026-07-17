@@ -9,3 +9,18 @@ services:
       # Guarda la voz elegida por servidor fuera del contenedor, para que
       # sobreviva a reconstrucciones (docker compose up --build).
       - ./guild-voices.json:/app/guild-voices.json
+
+  # Vigila el repo de GitHub y reconstruye "discord-tts-bot" solo cuando hay
+  # cambios nuevos. Necesita el socket de Docker del host, lo que le da
+  # control total sobre todos los contenedores del VPS (ver README).
+  deploy-watcher:
+    build: ./watcher
+    container_name: discord-tts-bot-watcher
+    restart: unless-stopped
+    environment:
+      - HOST_REPO_PATH=${HOST_REPO_PATH}
+      - DEPLOY_INTERVAL_SECONDS=${DEPLOY_INTERVAL_SECONDS:-300}
+      - DEPLOY_BRANCH=${DEPLOY_BRANCH:-main}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOST_REPO_PATH}:${HOST_REPO_PATH}

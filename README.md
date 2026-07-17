@@ -73,17 +73,20 @@ Conéctate por SSH a tu servidor e instala Docker (si no lo tienes):
 curl -fsSL https://get.docker.com | sh
 ```
 
-Clona el repo:
+Clona el repo **en una ruta que vayas a recordar** (la vas a necesitar tal cual en el siguiente paso):
 ```
+cd /opt
 git clone https://github.com/TU_USUARIO/discord-tts-bot.git
 cd discord-tts-bot
+pwd   # copia esta ruta completa, ej. /opt/discord-tts-bot
 ```
 
 Crea el `.env` directamente en el VPS (este archivo nunca vive en GitHub):
 ```
 cp .env.example .env
-nano .env   # pega tu DISCORD_TOKEN y TEXT_CHANNEL_ID
+nano .env
 ```
+Completa `DISCORD_TOKEN` y `TEXT_CHANNEL_ID`, y en `HOST_REPO_PATH` pega la ruta exacta que copiaste con `pwd` (ej. `/opt/discord-tts-bot`). **Esta ruta tiene que coincidir exactamente**, o el contenedor watcher no va a encontrar los archivos.
 
 Crea el archivo donde se guarda la voz elegida (para que Docker no lo cree como carpeta):
 ```
@@ -91,33 +94,27 @@ touch guild-voices.json
 echo '{}' > guild-voices.json
 ```
 
-Levanta el bot:
+Levanta todo (el bot + el watcher que vigila GitHub):
 ```
 docker compose up -d --build
 ```
 
-Revisa que arrancó bien:
+Revisa que ambos arrancaron bien:
 ```
 docker compose logs -f
 ```
-(`Ctrl+C` para salir de los logs, el bot sigue corriendo en segundo plano).
+(`Ctrl+C` para salir de los logs, los contenedores siguen corriendo en segundo plano).
 
 ### 5.3 Auto-actualización cuando subes cambios a GitHub
 
-El script `deploy.sh` revisa si hay commits nuevos en `main` y, si los hay, hace `git pull` y reconstruye el contenedor. Prográmalo con cron para que corra cada 5 minutos:
+El contenedor `deploy-watcher` corre en segundo plano y cada `DEPLOY_INTERVAL_SECONDS` (300 por defecto, 5 minutos) revisa si hay commits nuevos en `main`. Si los hay, hace `git pull` y reconstruye solo el contenedor del bot — nunca se reconstruye a sí mismo. No necesitas configurar nada de cron ni tocar el sistema del VPS: ya quedó todo definido en `docker-compose.yml`.
 
+Tu flujo de trabajo, de ahí en adelante: editas el código donde quieras, `git push`, y en máximo 5 minutos el VPS lo toma solo y reinicia el bot con la versión nueva. Para ver esas actualizaciones en vivo:
 ```
-chmod +x deploy.sh
-crontab -e
+docker compose logs -f deploy-watcher
 ```
 
-Agrega esta línea al final:
-```
-*/5 * * * * /ruta/completa/a/discord-tts-bot/deploy.sh >> /ruta/completa/a/discord-tts-bot/deploy.log 2>&1
-```
-(reemplaza `/ruta/completa/a/` por la ruta real, la obtienes con `pwd` dentro de la carpeta del repo en el VPS).
-
-A partir de ahí, tu flujo de trabajo es: edita el código donde quieras, `git push`, y en máximo 5 minutos el VPS lo toma solo y reinicia el bot con la versión nueva. Puedes ver el historial de actualizaciones con `cat deploy.log`.
+**Nota de seguridad:** el watcher necesita acceso al socket de Docker del host (`/var/run/docker.sock`) para poder reconstruir el contenedor del bot, lo que en la práctica le da control total sobre todos los contenedores del VPS (podría, en teoría, arrancar o detener cualquier otro contenedor que tengas ahí). Si prefieres evitar eso, hay una alternativa más restringida: usar `deploy.sh` con un cron del sistema en vez del contenedor watcher — te la explico si la quieres.
 
 ## Comandos en el chat
 
